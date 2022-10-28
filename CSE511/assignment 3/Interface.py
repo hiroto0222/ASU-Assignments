@@ -24,7 +24,39 @@ def loadRatings(ratingstablename, ratingsfilepath, openconnection):
 
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
-    pass
+    partition_prefix = "range_part"
+    conn = openconnection.cursor()  # create connection with postgresql
+    # create metatable to store number of partitions
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS range_meta(part INT, from_rating FLOAT, to_rating FLOAT)")
+
+    for i in range(numberofpartitions):
+        # create N equal range partitions [0-1] (inclusive), (1-2] (disclusive), (2-3], (3-4], (4-5]
+        from_rating = i * float(5 / numberofpartitions)
+        to_rating = (i + 1) * float(5 / numberofpartitions)
+        table_name = partition_prefix + str(i)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name))
+        openconnection.commit()
+
+        if i == 0:
+            conn.execute(
+                "INSERT INTO {DB} SELECT * FROM {RATINGS} WHERE {RATINGS}.rating >= {from_rating} AND {RATINGS}.rating <= {to_rating}".format(
+                    DB=table_name, RATINGS=ratingstablename, from_rating=from_rating, to_rating=to_rating
+                )
+            )
+        else:
+            conn.execute(
+                "INSERT INTO {DB} SELECT * FROM {RATINGS} WHERE {RATINGS}.rating > {from_rating} AND {RATINGS}.rating <= {to_rating}".format(
+                    DB=table_name, RATINGS=ratingstablename, from_rating=from_rating, to_rating=to_rating
+                )
+            )
+    
+        openconnection.commit()
+
+        # insert meta data
+        conn.execute("INSERT INTO range_meta VALUES ({part}, {from_rating}, {to_rating})".format(part=i, from_rating=from_rating, to_rating=to_rating))
+        openconnection.commit()
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
