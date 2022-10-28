@@ -29,6 +29,7 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
     # create metatable to store number of partitions
     conn.execute(
         "CREATE TABLE IF NOT EXISTS range_meta(part INT, from_rating FLOAT, to_rating FLOAT)")
+    openconnection.commit()
 
     for i in range(numberofpartitions):
         # create N equal range partitions [0-1] (inclusive), (1-2] (disclusive), (2-3], (3-4], (4-5]
@@ -51,7 +52,6 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
                     DB=table_name, RATINGS=ratingstablename, from_rating=from_rating, to_rating=to_rating
                 )
             )
-    
         openconnection.commit()
 
         # insert meta data
@@ -60,11 +60,56 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
-    pass
+    partition_prefix = "rrobin_part"
+    conn = openconnection.cursor()  # create connection with postgresql
+    # create metatable to store number of partitions
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS rrobin_meta(part INT, index INT)")
+    openconnection.commit()
+
+    # create temp table with indexes
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS rrobin_temp(UserID INT, MovieID INT, Rating FLOAT, Index INT)"
+    )
+    openconnection.commit()
+
+    # add data to temp table
+    conn.execute(
+        "INSERT INTO rrobin_temp (SELECT {DB}.UserID, {DB}.MovieID, {DB}.Rating , (ROW_NUMBER() OVER() -1) % {N} AS Index FROM {DB})".format(
+        N=str(numberofpartitions), DB=ratingstablename)
+    )
+    openconnection.commit()
+
+    for i in range(numberofpartitions):
+        table_name = partition_prefix + str(i)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name))
+        openconnection.commit()
+
+        conn.execute(
+            "INSERT INTO {DB} SELECT UserID, MovieID, Rating FROM rrobin_temp WHERE Index = {i}".format(DB=ratingstablename, i=i)
+        )
+        openconnection.commit()
+    
+    # insert meta data and delete temp table
+    conn.execute("INSERT INTO rrobin_meta SELECT {N} AS part, count(*) % {N} FROM {DB}".format(N=numberofpartitions, DB=ratingstablename))
+    deleteTables("rrobin_temp", openconnection)
+    openconnection.commit()
 
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+    conn = openconnection.cursor()
+    conn.execute(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'rrobin_part%';"
+    )
+
+    N = int(conn.fetchone()[0])
+    conn.execute("SELECT COUNT(*) FROM " + ratingstablename + ";")
+    rows = int(conn.fetchone()[0])
+    part_n = (rows) % N
+
+    conn.execute("INSERT INTO rrobin_part" + str(part_n) + " (UserID, MovieID, Rating) VALUES (" + str(userid) + "," + str(itemid) + "," + str(rating) + ");")
+    conn.close()
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
