@@ -83,11 +83,12 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
     for i in range(numberofpartitions):
         table_name = partition_prefix + str(i)
         conn.execute(
-            "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name))
+            "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name)
+        )
         openconnection.commit()
 
         conn.execute(
-            "INSERT INTO {DB} SELECT UserID, MovieID, Rating FROM rrobin_temp WHERE Index = {i}".format(DB=ratingstablename, i=i)
+            "INSERT INTO {DB} SELECT UserID, MovieID, Rating FROM rrobin_temp WHERE Index = {i}".format(DB=ratingstablename, i=str(i))
         )
         openconnection.commit()
     
@@ -102,18 +103,55 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
     conn.execute(
         "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'rrobin_part%';"
     )
+    openconnection.commit()
 
     N = int(conn.fetchone()[0])
-    conn.execute("SELECT COUNT(*) FROM " + ratingstablename + ";")
+    conn.execute("SELECT COUNT (*) FROM " + ratingstablename + ";")
     rows = int(conn.fetchone()[0])
     part_n = (rows) % N
 
-    conn.execute("INSERT INTO rrobin_part" + str(part_n) + " (UserID, MovieID, Rating) VALUES (" + str(userid) + "," + str(itemid) + "," + str(rating) + ");")
-    conn.close()
+    conn.execute(
+        "INSERT INTO rrobin_part{part_n} (UserID, MovieID, Rating) VALUES ({userid}, {itemid}, {rating});".format(
+            part_n=str(part_n),
+            userid=userid,
+            itemid=itemid,
+            rating=rating
+        )   
+    )
+    openconnection.commit()
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+    conn = openconnection.cursor()
+    conn.execute(
+        "SELECT MIN(range_meta.part) FROM range_meta WHERE range_meta.from_rating <= {rating} AND range_meta.to_rating >= {rating}".format(
+            rating=rating
+        )
+    )
+    openconnection.commit()
+    temp = conn.fetchone()
+    part_n = temp[0]
+    
+    conn.execute(
+        "INSERT INTO {DB} VALUES ({userid}, {itemid}, {rating})".format(
+            DB=ratingstablename,
+            userid=userid,
+            itemid=itemid,
+            rating=rating
+        )
+    )
+    openconnection.commit()
+
+    conn.execute(
+        "INSERT INTO range_part{part_n} VALUES ({userid}, {itemid}, {rating})".format(
+            part_n=str(part_n),
+            userid=userid,
+            itemid=itemid,
+            rating=rating
+        )
+    )
+    openconnection.commit()
+
 
 def createDB(dbname='dds_assignment'):
     """
