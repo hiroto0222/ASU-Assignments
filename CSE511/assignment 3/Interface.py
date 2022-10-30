@@ -60,42 +60,73 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
-    partition_prefix = "rrobin_part"
-    conn = openconnection.cursor()  # create connection with postgresql
-    # create metatable to store number of partitions
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS rrobin_meta(part INT, index INT)")
-    openconnection.commit()
+    # partition_prefix = "rrobin_part"
+    # conn = openconnection.cursor()  # create connection with postgresql
+    # # create metatable to store number of partitions
+    # conn.execute(
+    #     "CREATE TABLE IF NOT EXISTS rrobin_meta(part INT, index INT)")
+    # openconnection.commit()
 
-    # create temp table with indexes
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS rrobin_temp(UserID INT, MovieID INT, Rating FLOAT, Index INT)"
-    )
-    openconnection.commit()
+    # # create temp table with indexes
+    # conn.execute(
+    #     "CREATE TABLE IF NOT EXISTS rrobin_temp(UserID INT, MovieID INT, Rating FLOAT, Index INT)"
+    # )
+    # openconnection.commit()
 
-    # add data to temp table
-    conn.execute(
-        "INSERT INTO rrobin_temp (SELECT {DB}.UserID, {DB}.MovieID, {DB}.Rating , (ROW_NUMBER() OVER() -1) % {N} AS Index FROM {DB})".format(
-        N=str(numberofpartitions), DB=ratingstablename)
-    )
-    openconnection.commit()
+    # # add data to temp table
+    # conn.execute(
+    #     "INSERT INTO rrobin_temp (SELECT {DB}.UserID, {DB}.MovieID, {DB}.Rating , (ROW_NUMBER() OVER() -1) % {N} AS Index FROM {DB})".format(
+    #     N=str(numberofpartitions), DB=ratingstablename)
+    # )
+    # openconnection.commit()
 
-    for i in range(numberofpartitions):
-        table_name = partition_prefix + str(i)
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name)
-        )
-        openconnection.commit()
+    # for i in range(numberofpartitions):
+    #     table_name = partition_prefix + str(i)
+    #     conn.execute(
+    #         "CREATE TABLE IF NOT EXISTS {DB} (UserID INT, MovieID INT, Rating FLOAT)".format(DB=table_name)
+    #     )
+    #     openconnection.commit()
 
-        conn.execute(
-            "INSERT INTO {DB} SELECT UserID, MovieID, Rating FROM rrobin_temp WHERE Index = {i}".format(DB=ratingstablename, i=str(i))
-        )
-        openconnection.commit()
+    #     conn.execute(
+    #         "INSERT INTO {DB} SELECT UserID, MovieID, Rating FROM rrobin_temp WHERE Index = {i}".format(DB=ratingstablename, i=str(i))
+    #     )
+    #     openconnection.commit()
     
-    # insert meta data and delete temp table
-    conn.execute("INSERT INTO rrobin_meta SELECT {N} AS part, count(*) % {N} FROM {DB}".format(N=numberofpartitions, DB=ratingstablename))
-    deleteTables("rrobin_temp", openconnection)
+    # # insert meta data and delete temp table
+    # conn.execute("INSERT INTO rrobin_meta SELECT {N} AS part, count(*) % {N} FROM {DB}".format(N=numberofpartitions, DB=ratingstablename))
+    
+    # conn.execute("SELECT * FROM rrobin_temp")
+    # for table in conn.fetchall():
+    #     print(table)
+    
+    # deleteTables("rrobin_temp", openconnection)
+    # openconnection.commit()
+
+    conn = openconnection.cursor()
+
+    for i in range(0, numberofpartitions):
+        table_name = 'rrobin_part' + str(i)
+        # print( table_name)
+        drop_partition = 'DROP TABLE IF EXISTS ' + table_name + ' ;'
+        conn.execute(drop_partition)
+
+        query = 'CREATE TABLE ' + table_name + ' ( userid INT, movieid INT, rating FLOAT);'
+        conn.execute(query)
+
+    conn.execute("SELECT * FROM ratings;")
+    ratings_data = conn.fetchall()
+
+    partNum = 0
+
+    for row in ratings_data:
+        table_name = 'rrobin_part' + str(partNum)
+        insert_query = 'INSERT INTO ' + table_name + ' VALUES(' + str(row[0]) + ',' + str(row[1]) + ',' + str(row[2]) + ');'
+        conn.execute(insert_query)
+        partNum = partNum + 1
+        partNum = (partNum) % numberofpartitions
+
     openconnection.commit()
+    conn.close()
 
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
@@ -116,7 +147,7 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
             userid=userid,
             itemid=itemid,
             rating=rating
-        )   
+        )
     )
     openconnection.commit()
 
