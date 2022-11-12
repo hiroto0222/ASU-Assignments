@@ -137,7 +137,7 @@ def testrangeandrobinpartitioning(n, openconnection, rangepartitiontableprefix, 
                 "Completeness property of Range Partitioning failed. Excpected {0} rows after merging all tables, but found {1} rows".format(
                     ACTUAL_ROWS_IN_INPUT_FILE, count))
 
-            # Test 4: Test Disjointness by SQL UNION Magic
+            # Test 4: Test   by SQL UNION Magic
             count = totalrowsinallpartitions(cur, n, rangepartitiontableprefix, partitionstartindex)
             if count > ACTUAL_ROWS_IN_INPUT_FILE: raise Exception(
                 "Dijointness property of Range Partitioning failed. Excpected {0} rows after merging all tables, but found {1} rows".format(
