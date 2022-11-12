@@ -52,8 +52,8 @@ if __name__ == '__main__':
 
         # Calling PointQuery
         print("Performing Point Query")
-        Assignment2.PointQuery('ratings', 4.5, con);
-        #Assignment2.PointQuery('ratings',2,con);
+        # Assignment2.PointQuery('ratings', 4.5, con);
+        Assignment2.PointQuery('ratings',2,con);
         
         # Deleting All Tables
         Assignment1.deleteTables('all', con);
