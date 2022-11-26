@@ -3,6 +3,9 @@
 v1.1, Nov 16, Fix a bug in "Entrace.scala"
 v1.0, Nov 13, Initial version
 
+## Scripts
+- hotzoneanalysis:
+  - %SPARK_HOME%\bin\spark-submit target\scala-2.11\CSE512-Hotspot-Analysis-Template-assembly-0.1.0.jar test\output hotzoneanalysis src\resources\point_hotzone.csv src\resources\zone_hotzone.csv
 
 ## Requirement
 
