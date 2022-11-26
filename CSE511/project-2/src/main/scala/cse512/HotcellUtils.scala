@@ -47,5 +47,40 @@ object HotcellUtils {
     return calendar.get(Calendar.DAY_OF_MONTH)
   }
 
-  // YOU NEED TO CHANGE THIS PART
+  // check if coordinate is inbounds
+  def inBounds(x: Double, y: Double, z: Double, minX: Double, minY: Double, minZ: Double, maxX: Double, maxY: Double, maxZ: Double): Boolean = {
+    (x >= minX) && (x <= maxX) && (y >= minY) && (y <= maxY) && (z >= minZ) && (z <= maxZ)
+  }
+
+  // check boundaries
+  def checkBoundary(point: Int, minVal: Int, maxVal: Int): Int = {
+    if (point == minVal || point == maxVal) {
+      return 1
+    }
+    0
+  }
+
+  // get neighbour count
+  def getNeighbourCount(x: Int, y: Int, z: Int, minX: Int, minY: Int, minZ: Int, maxX: Int, maxY: Int, maxZ: Int): Int = {
+    // map to space time cube
+    val pointLocationInCube: Map[Int, String] = Map(0 -> "inside", 1 -> "face", 2 -> "edge", 3 -> "corner")
+    val mapping: Map[String, Int] = Map("inside" -> 26, "face" -> 17, "edge" -> 11, "corner" -> 7)
+
+    // get initial state
+    var initialState = 0;
+    initialState += checkBoundary(x, minX, maxX)
+    initialState += checkBoundary(y, minY, maxY)
+    initialState += checkBoundary(z, minZ, maxZ)
+
+    // get location
+    val location = pointLocationInCube(initialState)
+    mapping(location)
+  }
+
+  // get G score
+  def getGScore(x: Int, y: Int, z: Int, numCells: Int, mean: Double, sd: Double, totalNeighbours: Int, sumOfAllNeighbourPoints: Int): Double = {
+    val numerator = sumOfAllNeighbourPoints.toDouble - (mean * totalNeighbours.toDouble)
+    val denominator = sd * math.sqrt(((numCells.toDouble * totalNeighbours.toDouble) - (totalNeighbours.toDouble * totalNeighbours.toDouble)) / (numCells.toDouble - 1.0))
+    (numerator / denominator)
+  }
 }

@@ -34,10 +34,10 @@ def runHotcellAnalysis(spark: SparkSession, pointPath: String): DataFrame =
     pickupInfo.show()
 
     // Define the min and max of x, y, z
-    val minX = -74.50/HotcellUtils.coordinateStep
-    val maxX = -73.70/HotcellUtils.coordinateStep
-    val minY = 40.50/HotcellUtils.coordinateStep
-    val maxY = 40.90/HotcellUtils.coordinateStep
+    val minX = -74.50 / HotcellUtils.coordinateStep
+    val maxX = -73.70 / HotcellUtils.coordinateStep
+    val minY = 40.50 / HotcellUtils.coordinateStep
+    val maxY = 40.90 / HotcellUtils.coordinateStep
     val minZ = 1
     val maxZ = 31
     val numCells = (maxX - minX + 1)*(maxY - minY + 1)*(maxZ - minZ + 1)
