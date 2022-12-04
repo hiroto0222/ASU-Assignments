@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 15 19:43:04 2019
-
-Updated on Wed Jan 29 10:18:09 2020
-
-@author: created by Sowmya Myneni and updated by Dijiang Huang
-"""
-
 ########################################
 # Part 1 - Data Pre-Processing
 #######################################
