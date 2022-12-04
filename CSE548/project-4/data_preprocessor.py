@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar  8 10:36:17 2020
-
-@author: created by Sowmya Myneni and updated by Dijiang Huang
-"""
 import numpy as np
 import pandas as pd
 from keras.utils import np_utils
